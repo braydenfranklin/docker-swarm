@@ -1,0 +1,35 @@
+version: '3'
+services:
+  adminer:
+    image: adminer
+    env_file: db.env
+    networks:
+      - db
+      - public
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.adminer.rule=Host(`adminer.example.com`)
+        - traefik.http.routers.adminer.tls=true
+        - traefik.http.routers.adminer.tls.certresolver=letsEncrypt
+        - traefik.http.services.adminer.loadbalancer.server.port=8080
+  mariadb:
+    image: mariadb:10.5
+    env_file: db.env
+    volumes:
+      - ./db/mariadb:/var/lib/mysql
+    networks:
+      - db
+  postgres:
+    image: postgres:10.1
+    env_file: db.env
+    volumes:
+      - ./db/postgres:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - db
+networks:
+  public:
+    external: true
+  db:
+    external: true
