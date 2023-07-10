@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  app:
+    image: nextcloud
+    env_file: nextcloud.env
+    volumes:
+      - ./data/html:/var/www/html
+      - ./data/apps:/var/www/html/custom_apps
+      - ./data/config:/var/www/html/config
+      - ./data/data:/var/www/html/data
+    networks:
+      - internal
+      - db
+      - public
+    deploy:
+      labels:
+      - traefik.enable=true
+      - traefik.http.routers.nextcloud.rule=Host(`cloud.example.com`)
+      - traefik.http.services.nextcloud.loadbalancer.server.port=80
+      - traefik.http.middlewares.nextcloud-redirectregex.redirectRegex.permanent=true
+      - traefik.http.middlewares.nextcloud-redirectregex.redirectregex.regex=^https://(.*)/.well-known/(card|cal)dav
+      - traefik.http.middlewares.nextcloud-redirectregex.redirectregex.replacement=https://$$1/remote.php/dav/
+      - traefik.http.routers.nextcloud.middlewares=nextcloud-redirectregex@docker
+  redis:
+    image: redis:alpine
+    volumes:
+      - ./redis:/data
+    networks:
+      - internal
+networks:
+  public:
+    external: true
+  db:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.10.0/24
