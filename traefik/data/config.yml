@@ -1,0 +1,6 @@
+http:
+  middlewares:
+    traefikAuth:
+      basicAuth:
+        users:
+          - "admin:<hashedPassword>"
