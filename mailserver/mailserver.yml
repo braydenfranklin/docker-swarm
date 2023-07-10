@@ -1,0 +1,57 @@
+version: '3'
+services:
+  app:
+    image: tvial/docker-mailserver:latest
+    env_file: mailserver.env
+    volumes:
+      - ./data/maildata:/var/mail
+      - ./data/mailstate:/var/mail-state
+      - ./data/config:/tmp/docker-mailserver
+      - ./data/letsencrypt:/etc/letsencrypt
+    ports:
+      - target: 25
+        published: 25
+        protocol: tcp
+        mode: host
+      - target: 465
+        published: 465
+        protocol: tcp
+        mode: host
+      - target: 587
+        published: 587
+        protocol: tcp
+        mode: host
+      - target: 993
+        published: 993
+        protocol: tcp
+        mode: host
+      - target: 995
+        published: 995
+        protocol: tcp
+        mode: host
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+  rainloop:
+    image: hardware/rainloop
+    volumes:
+      - ./rainloop:/rainloop/data
+    networks:
+      - internal
+      - public
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.rainloop.rule=Host(`webmail.example.com`)
+        - traefik.http.services.rainloop.loadbalancer.server.port=8888
+        - traefik.http.routers.rainloop.tls=true
+        - traefik.http.routers.rainloop.tls.certresolver=letsEncrypt
+networks:
+  public:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.3.0/24
